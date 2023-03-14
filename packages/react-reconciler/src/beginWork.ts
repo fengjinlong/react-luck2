@@ -1,81 +1,80 @@
 import { ReactElementType } from 'shared/ReactTypes';
 import { mountChildFibers, reconcileChildFibers } from './childFibers';
 import { FiberNode } from './fiber';
+import { renderWithHooks } from './fiberHooks';
+import { Lane } from './fiberLanes';
 import { processUpdateQueue, UpdateQueue } from './updateQueue';
 import {
+	Fragment,
 	FunctionComponent,
 	HostComponent,
 	HostRoot,
 	HostText
 } from './workTags';
 
-export const beginWork = (wip: FiberNode) => {
-	// 比较 返回子 fiberNode
+// 递归中的递阶段
+export const beginWork = (wip: FiberNode, renderLane: Lane) => {
+	// 比较，返回子fiberNode
 	switch (wip.tag) {
 		case HostRoot:
-			// 进行两个流程
-			// 1. 计算属性最新之 2. 创建子 fiberNode
-			return updateHostRoot(wip);
+			return updateHostRoot(wip, renderLane);
 		case HostComponent:
-			// 进行一个流程
-			// 1. 创建子 fiberNode
 			return updateHostComponent(wip);
 		case HostText:
 			return null;
-		// case FunctionComponent:
-		// 	return updateFunctionComponent(wip);
+		case FunctionComponent:
+			return updateFunctionComponent(wip, renderLane);
+		case Fragment:
+			return updateFragment(wip);
 		default:
 			if (__DEV__) {
-				console.log('beginWork', 'default');
+				console.warn('beginWork未实现的类型');
 			}
+			break;
 	}
 	return null;
 };
-/**
- * @description: 计算最新属性(消耗一个 update)， 返回子 fiberNode
- * processUpdateQueue = (baseState,pendingUpdate) => { memoizedState: State }
- * @param {FiberNode} wip
- * @return {*}
- */
-function updateHostRoot(wip: FiberNode) {
+
+function updateFragment(wip: FiberNode) {
+	const nextChildren = wip.pendingProps;
+	reconcileChildren(wip, nextChildren);
+	return wip.child;
+}
+
+function updateFunctionComponent(wip: FiberNode, renderLane: Lane) {
+	const nextChildren = renderWithHooks(wip, renderLane);
+	reconcileChildren(wip, nextChildren);
+	return wip.child;
+}
+
+function updateHostRoot(wip: FiberNode, renderLane: Lane) {
 	const baseState = wip.memoizedState;
 	const updateQueue = wip.updateQueue as UpdateQueue<Element>;
 	const pending = updateQueue.shared.pending;
 	updateQueue.shared.pending = null;
-	const { memoizedState } = processUpdateQueue(baseState, pending);
+	const { memoizedState } = processUpdateQueue(baseState, pending, renderLane);
 	wip.memoizedState = memoizedState;
-	// 创建子 fiberNode
-	const nextChildren = wip.memoizedState; // ReactElement
-	// 子 ReactElement 和 子 currentFiberNode 生成 子 workInProgressFiberNode
+
+	const nextChildren = wip.memoizedState;
 	reconcileChildren(wip, nextChildren);
-	// 返回 子 workInProgressFiberNode
 	return wip.child;
 }
 
-/**
- * @description: 此类型 不涉及 更新流程，只涉及 创建子 fiberNode
- * <div><span>hello</span></div>
- * @param {FiberNode} wip
- * @return {*}
- */
 function updateHostComponent(wip: FiberNode) {
-	// 创建子 fiberNode
 	const nextProps = wip.pendingProps;
-	// nextChildren  --->  reactElement
 	const nextChildren = nextProps.children;
-	// 生成 子 fiberNode
 	reconcileChildren(wip, nextChildren);
-	// 返回 子 workInProgressFiberNode
 	return wip.child;
 }
+
 function reconcileChildren(wip: FiberNode, children?: ReactElementType) {
 	const current = wip.alternate;
-	if (current === null) {
-		// mount 大量 placement 操作， 可以优化  只用 placement 一次根节点
-		// 不追踪副作用
-		wip.child = mountChildFibers(wip, null, children);
-	} else {
+
+	if (current !== null) {
 		// update
 		wip.child = reconcileChildFibers(wip, current?.child, children);
+	} else {
+		// mount
+		wip.child = mountChildFibers(wip, null, children);
 	}
 }

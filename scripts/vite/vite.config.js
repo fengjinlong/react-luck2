@@ -15,13 +15,23 @@ export default defineConfig({
 	],
 	resolve: {
 		alias: [
-			{ find: 'react', replacement: resolvePkgPath('react') },
-			{ find: 'react-dom', replacement: resolvePkgPath('react-dom') },
+			{
+				find: 'react',
+				replacement: resolvePkgPath('react')
+			},
+			{
+				find: 'react-dom',
+				replacement: resolvePkgPath('react-dom')
+			},
+			{
+				find: 'react-noop-renderer',
+				replacement: resolvePkgPath('react-noop-renderer')
+			},
 			{
 				find: 'hostConfig',
 				replacement: path.resolve(
 					resolvePkgPath('react-dom'),
-					'./src/hostConfig.js'
+					'./src/hostConfig.ts'
 				)
 			}
 		]

@@ -1,35 +1,49 @@
-import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols';
+import { REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE } from 'shared/ReactSymbols';
 import {
-	ElementType,
+	Type,
 	Key,
+	Ref,
 	Props,
 	ReactElementType,
-	Ref,
-	Type
+	ElementType
 } from 'shared/ReactTypes';
+
+// ReactElement
+
 const ReactElement = function (
 	type: Type,
 	key: Key,
 	ref: Ref,
 	props: Props
 ): ReactElementType {
-	return {
+	const element = {
 		$$typeof: REACT_ELEMENT_TYPE,
 		type,
 		key,
 		ref,
 		props,
-		_owner: 'owner'
+		__mark: 'KaSong'
 	};
+	return element;
 };
 
-// <div key='key' ref='ref' id='d'>123</div>
-// babel --- _jsx("div", {ref: "ref",id: "d",children: "123"}, 'key');
+export function isValidElement(object: any) {
+	return (
+		typeof object === 'object' &&
+		object !== null &&
+		object.$$typeof === REACT_ELEMENT_TYPE
+	);
+}
 
-export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
+export const createElement = (
+	type: ElementType,
+	config: any,
+	...maybeChildren: any
+) => {
 	let key: Key = null;
 	const props: Props = {};
 	let ref: Ref = null;
+
 	for (const prop in config) {
 		const val = config[prop];
 		if (prop === 'key') {
@@ -49,19 +63,27 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 		}
 	}
 	const maybeChildrenLength = maybeChildren.length;
-	if (maybeChildrenLength === 1) {
-		props.children = maybeChildren[0];
-	} else {
-		props.children = maybeChildren;
+	if (maybeChildrenLength) {
+		if (maybeChildrenLength === 1) {
+			props.children = maybeChildren[0];
+		} else {
+			props.children = maybeChildren;
+		}
 	}
-
 	return ReactElement(type, key, ref, props);
 };
 
-export const jsxDEV = (type: ElementType, config: any) => {
+export const Fragment = REACT_FRAGMENT_TYPE;
+
+export const jsx = (type: ElementType, config: any, maybeKey: any) => {
 	let key: Key = null;
 	const props: Props = {};
 	let ref: Ref = null;
+
+	if (maybeKey !== undefined) {
+		key = '' + maybeKey;
+	}
+
 	for (const prop in config) {
 		const val = config[prop];
 		if (prop === 'key') {
@@ -83,3 +105,5 @@ export const jsxDEV = (type: ElementType, config: any) => {
 
 	return ReactElement(type, key, ref, props);
 };
+
+export const jsxDEV = jsx;
