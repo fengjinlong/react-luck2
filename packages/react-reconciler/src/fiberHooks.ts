@@ -17,12 +17,23 @@ import {
 } from './updateQueue';
 import { scheduleUpdateOnFiber } from './workLoop';
 
+// 当前正在 renderer 的 fiber
 let currentlyRenderingFiber: FiberNode | null = null;
+// 当前正在处理的 hooks
 let workInProgressHook: Hook | null = null;
 let currentHook: Hook | null = null;
 let renderLane: Lane = NoLane;
 
 const { currentDispatcher } = internals;
+
+// 通用 hook数据的结构 类型
+/**
+ * @description: useState useXxxx 对应不同的 hook 数据结构
+ * @return {*}
+ * fiber 的 memoizedState 指向 useState
+ * useState 的 next 指向 下一个 useXxx
+ * useState 的数据是 Hook 类型，里面有个 memoizedState 属性
+ */
 interface Hook {
 	memoizedState: any;
 	updateQueue: unknown;
@@ -47,16 +58,19 @@ type EffectCallback = () => void;
 type EffectDeps = any[] | null;
 
 export function renderWithHooks(wip: FiberNode, lane: Lane) {
-	// 赋值操作
+	// 当前正在 render 的 fiber 的赋值操作
 	currentlyRenderingFiber = wip;
-	// 重置 hooks链表
+	// 重置 hooks链表, 为了创建链表
 	wip.memoizedState = null;
 	// 重置 effect链表
 	wip.updateQueue = null;
 	renderLane = lane;
 
 	const current = wip.alternate;
-
+	// 当前使用 hooks 的集合
+	// const currentDispatcher: { current: Dispatcher | null } = {
+	// 	current: null
+	// };
 	if (current !== null) {
 		// update
 		currentDispatcher.current = HooksDispatcherOnUpdate;
@@ -78,6 +92,7 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
 	return children;
 }
 
+// mount
 const HooksDispatcherOnMount: Dispatcher = {
 	useState: mountState,
 	useEffect: mountEffect
@@ -89,6 +104,7 @@ const HooksDispatcherOnUpdate: Dispatcher = {
 };
 
 function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+	// 找到当前对应 hook 数据
 	const hook = mountWorkInProgresHook();
 	const nextDeps = deps === undefined ? null : deps;
 	(currentlyRenderingFiber as FiberNode).flags |= PassiveEffect;
@@ -294,13 +310,17 @@ function mountState<State>(
 	} else {
 		memoizedState = initialState;
 	}
-	const queue = createUpdateQueue<State>();
-	hook.updateQueue = queue;
+	const updateQueue = createUpdateQueue<State>();
+	hook.updateQueue = updateQueue;
 	hook.memoizedState = memoizedState;
 
 	// @ts-ignore
-	const dispatch = dispatchSetState.bind(null, currentlyRenderingFiber, queue);
-	queue.dispatch = dispatch;
+	const dispatch = dispatchSetState.bind(
+		null,
+		currentlyRenderingFiber,
+		updateQueue
+	);
+	updateQueue.dispatch = dispatch;
 	return [memoizedState, dispatch];
 }
 
@@ -312,7 +332,8 @@ function dispatchSetState<State>(
 	const lane = requestUpdateLane();
 	const update = createUpdate(action, lane);
 	enqueueUpdate(updateQueue, update);
-	scheduleUpdateOnFiber(fiber, lane);
+	scheduleUpdateOnFiber(fiber);
+	// scheduleUpdateOnFiber(fiber, lane);
 }
 
 function mountWorkInProgresHook(): Hook {

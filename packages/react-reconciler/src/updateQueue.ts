@@ -15,6 +15,7 @@ export interface UpdateQueue<State> {
 	dispatch: Dispatch<State> | null;
 }
 
+// dispatch: (action: unknown) => void;
 export const createUpdate = <State>(
 	action: Action<State>,
 	lane: Lane

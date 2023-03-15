@@ -24,6 +24,7 @@ export default [
 				format: 'umd'
 			}
 		],
+		// 外部的包，不需要打包。不能把 react 打进 react-dom
 		external: [...Object.keys(peerDependencies), 'scheduler'],
 		plugins: [
 			...getBaseRollupPlugins(),
