@@ -34,6 +34,10 @@ export function commitUpdate(fiber: FiberNode) {
 			const text = fiber.memoizedProps?.content;
 			return commitTextUpdate(fiber.stateNode, text);
 		case HostComponent:
+			// dom[xxx] = reactElemnt props
+			// export function updateFiberProps(node: DOMElement, props: Props) {
+			// 	node[elementPropsKey] = props;
+			// }
 			return updateFiberProps(fiber.stateNode, fiber.memoizedProps);
 		default:
 			if (__DEV__) {

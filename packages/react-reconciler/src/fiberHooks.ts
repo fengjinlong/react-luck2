@@ -21,6 +21,8 @@ import { scheduleUpdateOnFiber } from './workLoop';
 let currentlyRenderingFiber: FiberNode | null = null;
 // 当前正在处理的 hooks
 let workInProgressHook: Hook | null = null;
+
+// 更新时机 的 hook
 let currentHook: Hook | null = null;
 let renderLane: Lane = NoLane;
 
@@ -98,6 +100,7 @@ const HooksDispatcherOnMount: Dispatcher = {
 	useEffect: mountEffect
 };
 
+// update
 const HooksDispatcherOnUpdate: Dispatcher = {
 	useState: updateState,
 	useEffect: updateEffect
@@ -200,6 +203,12 @@ function createFCUpdateQueue<State>() {
 	return updateQueue;
 }
 
+/**
+ * @description: 更新阶段的 useState
+ * 1. hook数据的来源 ? currentHook
+ * 2. 由什么触发更新 ? ①交互事件 ②render 阶段
+ * @return {*}
+ */
 function updateState<State>(): [State, Dispatch<State>] {
 	// 找到当前useState对应的hook数据
 	const hook = updateWorkInProgresHook();
@@ -332,8 +341,8 @@ function dispatchSetState<State>(
 	const lane = requestUpdateLane();
 	const update = createUpdate(action, lane);
 	enqueueUpdate(updateQueue, update);
-	scheduleUpdateOnFiber(fiber);
-	// scheduleUpdateOnFiber(fiber, lane);
+	// scheduleUpdateOnFiber(fiber);
+	scheduleUpdateOnFiber(fiber, lane);
 }
 
 function mountWorkInProgresHook(): Hook {

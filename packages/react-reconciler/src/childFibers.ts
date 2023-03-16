@@ -43,8 +43,8 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 		element: ReactElementType
 	) {
 		const key = element.key;
+		// update
 		while (currentFiber !== null) {
-			// update
 			if (currentFiber.key === key) {
 				// key相同
 				if (element.$$typeof === REACT_ELEMENT_TYPE) {
@@ -76,6 +76,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 				currentFiber = currentFiber.sibling;
 			}
 		}
+		// mount fiber
 		// 根据element创建fiber
 		let fiber;
 		if (element.type === REACT_FRAGMENT_TYPE) {
@@ -103,6 +104,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 			deleteChild(returnFiber, currentFiber);
 			currentFiber = currentFiber.sibling;
 		}
+		// mount fiber
 		const fiber = new FiberNode(HostText, { content }, null);
 		fiber.return = returnFiber;
 		return fiber;

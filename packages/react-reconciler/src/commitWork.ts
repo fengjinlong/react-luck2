@@ -69,10 +69,13 @@ const commitMutaitonEffectsOnFiber = (
 		commitPlacement(finishedWork);
 		finishedWork.flags &= ~Placement;
 	}
+
+	// update
 	if ((flags & Update) !== NoFlags) {
 		commitUpdate(finishedWork);
 		finishedWork.flags &= ~Update;
 	}
+	// update delete
 	if ((flags & ChildDeletion) !== NoFlags) {
 		const deletions = finishedWork.deletions;
 		if (deletions !== null) {
