@@ -261,7 +261,14 @@ function updateState<State>(): [State, Dispatch<State>] {
 function updateWorkInProgresHook(): Hook {
 	// TODO render阶段触发的更新
 	let nextCurrentHook: Hook | null;
-
+	/**
+	 * 1. 当前更新时机的 currentHook 为 null, nextCurrentHook = current ? current.memoizedState : null
+	 * 2. 当前更新时机的 currentHook 不为 null, nextCurrentHook = currentHook.next
+	 * 3. nextCurrentHook 为 null, 说明是 更新时机 添加 了一个新的 hook，if (xxx) { useState(1) }, 报错
+	 * 4. nextCurrentHook 不为 null, 构建 hook 数据对象 newHook
+	 * 5. return workInProgressHook ? workInProgressHook.next = newHook : workInProgressHook = newHook
+	 */
+	// 当前更新时机的 hook
 	if (currentHook === null) {
 		// 这是这个FC update时的第一个hook
 		const current = currentlyRenderingFiber?.alternate;
@@ -279,6 +286,13 @@ function updateWorkInProgresHook(): Hook {
 	if (nextCurrentHook === null) {
 		// mount/update u1 u2 u3
 		// update       u1 u2 u3 u4
+		/**
+		 * 场景
+		 * 更新时，添加一个新的 hook, nextCurrentHook = u3.next 也就是 null
+		 * if (xxx) {
+		 * 	useState(1) // u4
+		 * }
+		 */
 		throw new Error(
 			`组件${currentlyRenderingFiber?.type}本次执行时的Hook比上次执行时多`
 		);
@@ -292,6 +306,7 @@ function updateWorkInProgresHook(): Hook {
 		baseQueue: currentHook.baseQueue,
 		next: null
 	};
+	// 当前正在处理的 hooks
 	if (workInProgressHook === null) {
 		// mount时 第一个hook
 		if (currentlyRenderingFiber === null) {

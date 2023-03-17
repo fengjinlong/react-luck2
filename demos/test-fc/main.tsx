@@ -20,8 +20,12 @@ import ReactDOM from 'react-dom';
 // }
 
 function App() {
-	const [num] = useState(100);
-	return <div>{100}</div>;
+	const [num, setNum] = useState(110);
+	window.setNum = setNum;
+	return num % 3 ? <div>{num}</div> : <Child />;
+}
+function Child() {
+	return <div>child</div>;
 }
 const root = ReactDOM.createRoot(document.querySelector('#root')).render(
 	<App />
