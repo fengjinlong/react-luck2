@@ -20,13 +20,23 @@ import ReactDOM from 'react-dom';
 // }
 
 function App() {
-	const [num, setNum] = useState(110);
+	const [num, setNum] = useState(100);
 	window.setNum = setNum;
-	return num % 3 ? <div>{num}</div> : <Child />;
+	const arr =
+		num % 2 === 0
+			? [<li key="1">1</li>, <li key="2">2</li>, <li key="3">3</li>]
+			: [<li key="3">3</li>, <li key="2">2</li>, <li key="1">1</li>];
+	const arr1 = (
+		<>
+			<div>11</div>
+		</>
+	);
+	// return num % 3 ? <div onClick={() => setNum(num + 1)}>{num}</div> : <Child />;
+	return <ul onClick={() => setNum(num + 1)}>{arr1}</ul>;
 }
-function Child() {
-	return <div>child</div>;
-}
+// function Child() {
+// 	return <div>child</div>;
+// }
 const root = ReactDOM.createRoot(document.querySelector('#root')).render(
 	<App />
 );

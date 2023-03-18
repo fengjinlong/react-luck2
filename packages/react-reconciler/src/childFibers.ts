@@ -24,6 +24,10 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 			deletions.push(childToDelete);
 		}
 	}
+	/**
+	 * @description: 删除兄弟节点
+	 * @return {*}
+	 */
 	function deleteRemainingChildren(
 		returnFiber: FiberNode,
 		currentFirstChild: FiberNode | null

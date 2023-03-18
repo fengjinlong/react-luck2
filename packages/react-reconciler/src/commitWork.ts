@@ -283,6 +283,7 @@ function getHostSibling(fiber: FiberNode) {
 		while (node.tag !== HostText && node.tag !== HostComponent) {
 			// 向下遍历
 			if ((node.flags & Placement) !== NoFlags) {
+				// 当前节点不稳定 不可作为 参照物/
 				continue findSibling;
 			}
 			if (node.child === null) {
