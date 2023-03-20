@@ -8,8 +8,6 @@ import {
 import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
 import { Lane, Lanes, NoLane, NoLanes } from './fiberLanes';
-import { Effect } from './fiberHooks';
-import { CallbackNode } from 'scheduler';
 
 export class FiberNode {
 	type: any;
@@ -30,7 +28,6 @@ export class FiberNode {
 	flags: Flags;
 	subtreeFlags: Flags;
 	updateQueue: unknown;
-	// 要删除的子节点
 	deletions: FiberNode[] | null;
 
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
@@ -64,35 +61,19 @@ export class FiberNode {
 	}
 }
 
-export interface PendingPassiveEffects {
-	unmount: Effect[];
-	update: Effect[];
-}
-
 export class FiberRootNode {
 	container: Container;
 	current: FiberNode;
 	finishedWork: FiberNode | null;
 	pendingLanes: Lanes;
 	finishedLane: Lane;
-	pendingPassiveEffects: PendingPassiveEffects;
-	callbackNode: CallbackNode | null;
-	callbackPriority: Lane;
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container;
 		this.current = hostRootFiber;
 		hostRootFiber.stateNode = this;
 		this.finishedWork = null;
-
 		this.pendingLanes = NoLanes;
 		this.finishedLane = NoLane;
-		this.callbackNode = null;
-		this.callbackPriority = NoLane;
-
-		this.pendingPassiveEffects = {
-			unmount: [],
-			update: []
-		};
 	}
 }
 

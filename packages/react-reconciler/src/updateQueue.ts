@@ -1,6 +1,6 @@
 import { Dispatch } from 'react/src/currentDispatcher';
 import { Action } from 'shared/ReactTypes';
-import { isSubsetOfLanes, Lane, NoLane } from './fiberLanes';
+import { Lane } from './fiberLanes';
 
 export interface Update<State> {
 	action: Action<State>;
@@ -15,7 +15,6 @@ export interface UpdateQueue<State> {
 	dispatch: Dispatch<State> | null;
 }
 
-// dispatch: (action: unknown) => void;
 export const createUpdate = <State>(
 	action: Action<State>,
 	lane: Lane
@@ -57,73 +56,43 @@ export const processUpdateQueue = <State>(
 	baseState: State,
 	pendingUpdate: Update<State> | null,
 	renderLane: Lane
-): {
-	memoizedState: State;
-	baseState: State;
-	baseQueue: Update<State> | null;
-} => {
+): { memoizedState: State } => {
 	const result: ReturnType<typeof processUpdateQueue<State>> = {
-		memoizedState: baseState,
-		baseState,
-		baseQueue: null
+		memoizedState: baseState
 	};
 
 	if (pendingUpdate !== null) {
 		// 第一个update
 		const first = pendingUpdate.next;
 		let pending = pendingUpdate.next as Update<any>;
-
-		let newBaseState = baseState;
-		let newBaseQueueFirst: Update<State> | null = null;
-		let newBaseQueueLast: Update<State> | null = null;
-		let newState = baseState;
-
+		/**
+		 * padding = a -> b -> c -> a 当前 fiber的update链表
+		 * renderLane 正在渲染的lane，这个 lane 是在 render (执行workLoop) 之前就确定的
+		 * 如果update的lane和renderLane相同，才会执行update
+		 *
+		 * a 完毕，递归进入 b,
+		 * b 完毕，递归进入 c,
+		 * c 完毕，递归进入 a a === first，退出循环
+		 */
 		do {
 			const updateLane = pending.lane;
-			if (!isSubsetOfLanes(renderLane, updateLane)) {
-				// 优先级不足
-				const clone = createUpdate(pending.action, pending.lane);
-				// 是不是第一个被跳过的
-				if (newBaseQueueFirst === null) {
-					// first = u0 last = u0
-					newBaseQueueFirst = clone;
-					newBaseQueueLast = clone;
-					newBaseState = newState;
-				} else {
-					// first = u0 -> u1 last = u1
-					// first = u0 -> u1 -> u2 last = u2
-					(newBaseQueueLast as Update<State>).next = clone;
-					newBaseQueueLast = clone;
-				}
-			} else {
-				// 优先级够
-				if (newBaseQueueLast !== null) {
-					const clone = createUpdate(pending.action, NoLane);
-					newBaseQueueLast.next = clone;
-					newBaseQueueLast = clone;
-				}
-
+			if (updateLane === renderLane) {
 				const action = pending.action;
 				if (action instanceof Function) {
 					// baseState 1 update (x) => 4x -> memoizedState 4
-					newState = action(baseState);
+					baseState = action(baseState);
 				} else {
 					// baseState 1 update 2 -> memoizedState 2
-					newState = action;
+					baseState = action;
+				}
+			} else {
+				if (__DEV__) {
+					console.error('不应该进入updateLane !== renderLane逻辑');
 				}
 			}
-			pending = pending.next as Update<State>;
+			pending = pending.next as Update<any>;
 		} while (pending !== first);
-
-		if (newBaseQueueLast === null) {
-			// 没有被跳过的
-			newBaseState = newState;
-		} else {
-			newBaseQueueLast.next = newBaseQueueFirst;
-		}
-		result.baseState = newBaseState;
-		result.memoizedState = newState;
-		result.baseQueue = newBaseQueueLast;
 	}
+	result.memoizedState = baseState;
 	return result;
 };
