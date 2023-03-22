@@ -27,7 +27,7 @@ import { HostRoot } from './workTags';
 
 import {
 	unstable_scheduleCallback as scheduleCallback,
-	unstable_NormalPriority as NormalPriority
+	unstable_NormalPriority as NormalSchedulerPriority
 } from 'scheduler';
 import { HookHasEffect, Passive } from './hookEffectTags';
 
@@ -176,9 +176,10 @@ function commitRoot(root: FiberRootNode) {
 		if (!rootDoesHavePassiveEffects) {
 			rootDoesHavePassiveEffects = true;
 			// 这里相当于一个 setTimeout
-			scheduleCallback(NormalPriority, () => {
+			scheduleCallback(NormalSchedulerPriority, () => {
 				// 执行副作用
 				// commitRoot(root);
+				flushPassiveEffects(root.pendingPassiveEffects);
 				return;
 			});
 		}

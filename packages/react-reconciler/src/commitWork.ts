@@ -13,6 +13,7 @@ import {
 	MutationMask,
 	NoFlags,
 	PassiveEffect,
+	PassiveMask,
 	Placement,
 	Update
 } from './fiberFlags';
@@ -57,7 +58,6 @@ export const commitMutationEffects = (
 		}
 	}
 };
-
 const commitMutaitonEffectsOnFiber = (
 	finishedWork: FiberNode,
 	root: FiberRootNode
@@ -110,19 +110,19 @@ function commitPassiveEffect(
 	}
 }
 
-// 遍历 链表
-// 每遍历一个， cb(effect)
+// // 遍历 链表
+// // 每遍历一个， cb(effect)
 function commitHookEffectList(
 	flags: Flags,
 	lastEffect: Effect,
 	callback: (effect: Effect) => void
 ) {
-	const effect = lastEffect.next as Effect;
+	let effect = lastEffect.next as Effect;
 	do {
 		if ((effect.tag & flags) === flags) {
 			callback(effect);
 		}
-		// effect = effect.next
+		effect = effect.next as Effect;
 	} while (effect !== lastEffect.next);
 }
 
