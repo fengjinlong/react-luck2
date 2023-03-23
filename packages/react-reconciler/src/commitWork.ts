@@ -13,7 +13,6 @@ import {
 	MutationMask,
 	NoFlags,
 	PassiveEffect,
-	PassiveMask,
 	Placement,
 	Update
 } from './fiberFlags';
@@ -28,6 +27,10 @@ import {
 
 let nextEffect: FiberNode | null = null;
 
+/**
+ * @description: 构建 dom 树
+ * @return {*}
+ */
 export const commitMutationEffects = (
 	finishedWork: FiberNode,
 	root: FiberRootNode
@@ -65,10 +68,12 @@ const commitMutaitonEffectsOnFiber = (
 	const flags = finishedWork.flags;
 
 	if ((flags & Placement) !== NoFlags) {
+		// append
 		commitPlacement(finishedWork);
 		finishedWork.flags &= ~Placement;
 	}
 	if ((flags & Update) !== NoFlags) {
+		// 更新  content
 		commitUpdate(finishedWork);
 		finishedWork.flags &= ~Update;
 	}

@@ -71,6 +71,7 @@ function ensureRootIsScheduled(root: FiberRootNode) {
 		// [performSyncWorkOnRoot, performSyncWorkOnRoot, performSyncWorkOnRoot]
 		// scheduleSyncCallback(fn) => syncQueue.push(fn)
 		scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root, updateLane));
+		// 执行
 		scheduleMicroTask(flushSyncCallbacks);
 	} else {
 		// 其他优先级 用宏任务调度
@@ -164,6 +165,7 @@ function commitRoot(root: FiberRootNode) {
 	root.finishedWork = null;
 	root.finishedLane = NoLane;
 
+	// root.pendingLanes &= ~lane;
 	markRootFinished(root, lane);
 
 	// 调度 effect
@@ -173,13 +175,27 @@ function commitRoot(root: FiberRootNode) {
 	) {
 		// 有副作用
 		// 函数组件需要执行 useEffect 的回调
+
+		//
+		//
+		/**
+		 * beginwork 时候已经添加了 effect 副作用 的flage, 但是还没有执行。
+		 * 执行下面时候，实际root是没有收集 {unmount: [], update: []} 的
+		 * 用一个异步执行的函数，来执行副作用之前，让收集的同步的收集工作，先执行完
+		 */
 		if (!rootDoesHavePassiveEffects) {
 			rootDoesHavePassiveEffects = true;
 			// 这里相当于一个 setTimeout
 			scheduleCallback(NormalSchedulerPriority, () => {
 				// 执行副作用
 				// commitRoot(root);
+
 				flushPassiveEffects(root.pendingPassiveEffects);
+				// root.pendingPassiveEffects
+				// {
+				// 	unmount: [],
+				// 	update: []
+				// };
 				return;
 			});
 		}
@@ -194,6 +210,10 @@ function commitRoot(root: FiberRootNode) {
 	if (subtreeHasEffect || rootHasEffect) {
 		// beforeMutation
 		// mutation Placement
+		/**
+		 * 1. 构建 dom 树
+		 * 2. fc 情况 root 收集 this.pendingPassiveEffects = {unmount: [],update: []};
+		 */
 		commitMutationEffects(finishedWork, root);
 
 		root.current = finishedWork;

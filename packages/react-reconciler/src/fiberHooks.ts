@@ -74,6 +74,10 @@ const HooksDispatcherOnMount: Dispatcher = {
 	useState: mountState,
 	useEffect: mountEffect
 };
+const HooksDispatcherOnUpdate: Dispatcher = {
+	useState: updateState,
+	useEffect: updateEffect
+};
 function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
 	const hook = mountWorkInProgresHook();
 	const nextDeps = deps === undefined ? null : deps;
@@ -148,10 +152,7 @@ function updateState<State>(): [State, Dispatch<State>] {
 
 	return [hook.memoizedState, queue.dispatch as Dispatch<State>];
 }
-const HooksDispatcherOnUpdate: Dispatcher = {
-	useState: updateState,
-	useEffect: updateEffect
-};
+
 function updateEffect(create: EffectCallback | void, deps: any) {
 	const hook = updateWorkInProgresHook();
 	const nextDeps = deps === undefined ? null : deps;
@@ -162,12 +163,14 @@ function updateEffect(create: EffectCallback | void, deps: any) {
 		if (nextDeps !== null) {
 			const prevDeps = prevEffect.deps;
 			if (areHookInputsEqual(nextDeps, prevDeps)) {
+				// 依赖没有变化 useEffect 不出发回调 Passive 没有 HookHasEffect
 				hook.memoizedState = pushEffect(Passive, create, destroy, nextDeps);
 				return;
 			}
 		}
 		// 钱比较 deps不相等
 		(currentlyRenderingFiber as FiberNode).flags |= PassiveEffect;
+		// 依赖有变化 useEffect 触发回调 Passive 有 HookHasEffect
 		hook.memoizedState = pushEffect(
 			Passive | HookHasEffect,
 			create,
