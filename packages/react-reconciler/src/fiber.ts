@@ -66,6 +66,7 @@ export interface PendingPassiveEffects {
 	unmount: Effect[];
 	update: Effect[];
 }
+
 export class FiberRootNode {
 	container: Container;
 	current: FiberNode;
@@ -80,6 +81,7 @@ export class FiberRootNode {
 		this.finishedWork = null;
 		this.pendingLanes = NoLanes;
 		this.finishedLane = NoLane;
+
 		this.pendingPassiveEffects = {
 			unmount: [],
 			update: []

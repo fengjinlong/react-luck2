@@ -13,6 +13,7 @@ import {
 	MutationMask,
 	NoFlags,
 	PassiveEffect,
+	PassiveMask,
 	Placement,
 	Update
 } from './fiberFlags';
@@ -27,10 +28,6 @@ import {
 
 let nextEffect: FiberNode | null = null;
 
-/**
- * @description: 构建 dom 树
- * @return {*}
- */
 export const commitMutationEffects = (
 	finishedWork: FiberNode,
 	root: FiberRootNode
@@ -42,7 +39,7 @@ export const commitMutationEffects = (
 		const child: FiberNode | null = nextEffect.child;
 
 		if (
-			(nextEffect.subtreeFlags & (MutationMask | PassiveEffect)) !== NoFlags &&
+			(nextEffect.subtreeFlags & (MutationMask | PassiveMask)) !== NoFlags &&
 			child !== null
 		) {
 			nextEffect = child;
@@ -61,6 +58,7 @@ export const commitMutationEffects = (
 		}
 	}
 };
+
 const commitMutaitonEffectsOnFiber = (
 	finishedWork: FiberNode,
 	root: FiberRootNode
@@ -68,12 +66,10 @@ const commitMutaitonEffectsOnFiber = (
 	const flags = finishedWork.flags;
 
 	if ((flags & Placement) !== NoFlags) {
-		// append
 		commitPlacement(finishedWork);
 		finishedWork.flags &= ~Placement;
 	}
 	if ((flags & Update) !== NoFlags) {
-		// 更新  content
 		commitUpdate(finishedWork);
 		finishedWork.flags &= ~Update;
 	}
@@ -87,42 +83,40 @@ const commitMutaitonEffectsOnFiber = (
 		finishedWork.flags &= ~ChildDeletion;
 	}
 	if ((flags & PassiveEffect) !== NoFlags) {
-		// 收集依赖
+		// 收集回调
 		commitPassiveEffect(finishedWork, root, 'update');
-		// 移除
 		finishedWork.flags &= ~PassiveEffect;
 	}
 };
 
 function commitPassiveEffect(
-	finishedWork: FiberNode,
+	fiber: FiberNode,
 	root: FiberRootNode,
 	type: keyof PendingPassiveEffects
 ) {
+	// update unmount
 	if (
-		finishedWork.tag !== FunctionComponent ||
-		(type === 'update' && (finishedWork.flags & PassiveEffect) === NoFlags)
+		fiber.tag !== FunctionComponent ||
+		(type === 'update' && (fiber.flags & PassiveEffect) === NoFlags)
 	) {
 		return;
 	}
-
-	const updateQueue = finishedWork.updateQueue as FCUpdateQueue<any>;
+	const updateQueue = fiber.updateQueue as FCUpdateQueue<any>;
 	if (updateQueue !== null) {
-		if (updateQueue.lastEffect === null) {
+		if (updateQueue.lastEffect === null && __DEV__) {
 			console.error('当FC存在PassiveEffect flag时，不应该不存在effect');
 		}
 		root.pendingPassiveEffects[type].push(updateQueue.lastEffect as Effect);
 	}
 }
 
-// // 遍历 链表
-// // 每遍历一个， cb(effect)
 function commitHookEffectList(
 	flags: Flags,
 	lastEffect: Effect,
 	callback: (effect: Effect) => void
 ) {
 	let effect = lastEffect.next as Effect;
+
 	do {
 		if ((effect.tag & flags) === flags) {
 			callback(effect);
@@ -131,28 +125,30 @@ function commitHookEffectList(
 	} while (effect !== lastEffect.next);
 }
 
-// unmount 的遍历流程
 export function commitHookEffectListUnmount(flags: Flags, lastEffect: Effect) {
 	commitHookEffectList(flags, lastEffect, (effect) => {
-		if (typeof effect.destroy === 'function') {
-			effect.destroy();
+		const destroy = effect.destroy;
+		if (typeof destroy === 'function') {
+			destroy();
 		}
-		// 函数卸载时，清空effect
 		effect.tag &= ~HookHasEffect;
 	});
 }
 
-export function commitHookEffectListDestory(flags: Flags, lastEffect: Effect) {
+export function commitHookEffectListDestroy(flags: Flags, lastEffect: Effect) {
 	commitHookEffectList(flags, lastEffect, (effect) => {
-		if (typeof effect.destroy === 'function') {
-			effect.destroy();
+		const destroy = effect.destroy;
+		if (typeof destroy === 'function') {
+			destroy();
 		}
 	});
 }
+
 export function commitHookEffectListCreate(flags: Flags, lastEffect: Effect) {
 	commitHookEffectList(flags, lastEffect, (effect) => {
-		if (typeof effect.create === 'function') {
-			effect.destroy = effect.create();
+		const create = effect.create;
+		if (typeof create === 'function') {
+			effect.destroy = create();
 		}
 	});
 }
@@ -193,7 +189,7 @@ function commitDeletion(childToDelete: FiberNode, root: FiberRootNode) {
 				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
 				return;
 			case FunctionComponent:
-				// TODO useEffect unmount 、解绑ref
+				// TODO 解绑ref
 				commitPassiveEffect(unmountFiber, root, 'unmount');
 				return;
 			default:

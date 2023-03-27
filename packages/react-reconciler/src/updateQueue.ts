@@ -65,15 +65,6 @@ export const processUpdateQueue = <State>(
 		// 第一个update
 		const first = pendingUpdate.next;
 		let pending = pendingUpdate.next as Update<any>;
-		/**
-		 * padding = a -> b -> c -> a 当前 fiber的update链表
-		 * renderLane 正在渲染的lane，这个 lane 是在 render (执行workLoop) 之前就确定的
-		 * 如果update的lane和renderLane相同，才会执行update
-		 *
-		 * a 完毕，递归进入 b,
-		 * b 完毕，递归进入 c,
-		 * c 完毕，递归进入 a a === first，退出循环
-		 */
 		do {
 			const updateLane = pending.lane;
 			if (updateLane === renderLane) {
